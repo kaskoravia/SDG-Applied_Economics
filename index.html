@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReConDuct: Reusable Kit Market Survey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg:#f1f5f4; --card:#fff; --ink:#0f2a2e; --muted:#587074; --line:#d3dfde;
+        --accent:#0e5e5a; --accent-ink:#fff; --accent-soft:#e3f1ef; --err:#b3261e;
+        --side:#0b3b3e; --side-ink:#eaf6f3; --side-hi:#8fe3c8;
+        --head:"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+        --body:"DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color-scheme: light dark;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root { --bg:#0c1517; --card:#132124; --ink:#e6f1ef; --muted:#93aeab; --line:#263c3f;
+                        --accent:#5ccdb6; --accent-ink:#05211d; --accent-soft:#163536; --err:#ff8a80;
+                        --side:#081f21; --side-ink:#e6f1ef; --side-hi:#5ccdb6; }
+    }
+    * { box-sizing:border-box; }
+    html { scroll-padding-top:72px; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 var(--body); }
+
+    /* Layout: stacked on phones, split with a fixed intro panel on wide screens */
+    .shell { display:grid; grid-template-columns:1fr; min-height:100vh; }
+    aside { background:var(--side); color:var(--side-ink); position:relative; overflow:hidden;
+                    padding:40px 22px 36px; }
+    aside::after { content:""; position:absolute; right:-90px; bottom:-90px; width:260px; height:260px;
+                    border-radius:50%; border:36px solid var(--side-hi); opacity:.12; pointer-events:none; }
+    aside h1 { font:700 clamp(1.8rem,6vw,2.6rem)/1.08 var(--head); margin:0 0 22px; letter-spacing:-.01em; }
+    aside .hello { font:600 1.2rem var(--head); color:var(--side-hi); margin:0 0 10px; }
+    aside p { margin:0 0 14px; max-width:46ch; opacity:.92; }
+    aside .small { font-size:.95rem; opacity:.8; }
+    .intro { position:relative; z-index:1; }
+
+    main { padding:0 16px 64px; width:100%; max-width:680px; margin:0 auto; }
+    .progress { position:sticky; top:0; z-index:5; background:var(--bg); padding:14px 0 12px; }
+    .bar { height:6px; border-radius:6px; background:var(--line); overflow:hidden; }
+    .bar i { display:block; height:100%; width:0; background:var(--accent); border-radius:6px; transition:width .25s; }
+    #count { display:block; font-size:.85rem; color:var(--muted); margin-top:6px; }
+
+    fieldset { background:var(--card); border:1.5px solid var(--line); border-radius:16px;
+                         padding:18px 16px 14px; margin:0 0 16px; min-width:0; }
+    fieldset.missing { border-color:var(--err); }
+    legend { font:600 1.05rem/1.4 var(--head); padding:0; margin:0 0 12px; float:left; width:100%; }
+    legend + * { clear:both; }
+    .hint { display:block; font:400 .88rem var(--body); color:var(--muted); margin-top:2px; }
+
+    .opts { display:grid; gap:8px; grid-template-columns:1fr; }
+    .opt { position:relative; display:block; cursor:pointer; }
+    .opt input { position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+    .opt span { display:flex; align-items:center; gap:12px; padding:12px 14px; min-height:48px;
+                            border:1.5px solid var(--line); border-radius:12px; background:var(--card);
+                            transition:border-color .15s, background .15s; }
+    .opt span::before { content:""; flex:none; width:20px; height:20px; border-radius:50%;
+                            border:2px solid var(--muted); transition:all .15s; }
+    .opt.check span::before { border-radius:6px; }
+    .opt:hover span { border-color:var(--accent); }
+    .opt input:checked + span { border-color:var(--accent); background:var(--accent-soft); font-weight:600; }
+    .opt input:checked + span::before { background:var(--accent); border-color:var(--accent);
+                            box-shadow:inset 0 0 0 3px var(--accent-soft); }
+    .opt input:focus-visible + span { outline:3px solid var(--accent); outline-offset:2px; }
+    .row3 { grid-template-columns:repeat(3,1fr); }
+    .row3 .opt span { justify-content:center; text-align:center; padding:12px 6px; }
+    .row3 .opt span::before { display:none; }
+
+    .note { display:flex; gap:12px; background:var(--accent-soft); border-radius:14px;
+                    padding:14px 16px; margin:4px 0 16px; font-size:.95rem; }
+    .price { white-space:nowrap; }
+
+    button { width:100%; min-height:54px; font:600 1.05rem var(--head); border:0; border-radius:14px;
+                     background:var(--accent); color:var(--accent-ink); cursor:pointer; transition:transform .1s, opacity .15s; }
+    button:active { transform:scale(.99); }
+    button:disabled { opacity:.6; cursor:wait; }
+    button:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+    .error { color:var(--err); margin:12px 0 0; min-height:1.3em; font-weight:500; }
+
+    #thanks { display:none; text-align:center; padding:80px 8px; }
+    #thanks h2 { font:700 2rem var(--head); margin:0 0 8px; }
+    #thanks p { color:var(--muted); }
+
+    @media (min-width:600px) {
+        aside { padding:56px 40px 48px; }
+        main { padding:0 28px 80px; }
+        fieldset { padding:22px 22px 18px; }
+        .cols2 { grid-template-columns:1fr 1fr; }
+    }
+    @media (min-width:900px) {
+        .shell { grid-template-columns:minmax(360px,42%) 1fr; }
+        aside { position:sticky; top:0; height:100vh; overflow-y:auto; padding:72px 56px 56px; }
+        main { padding:0 48px 96px; margin:0; max-width:760px; }
+        .progress { padding-top:28px; }
+    }
+    @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="shell">
+    <aside>
+        <div class="intro">
+            <h1>ReConDuct: Reusable Kit Market Survey</h1>
+            <p class="hello">Good day!</p>
+            <p>We are the ReConDuct Team conducting a survey for our Applied Economics project under the SDG Business Showcase.</p>
+            <p>Our proposed product, ReConDuct Kit, is an affordable reusable kit consisting of a water tumbler, lunchbox, spoon and fork, and lunchbag. This product aims to encourage responsible consumption while helping reduce single-use plastic waste in our school.</p>
+            <p>This survey aims to determine students’ current use of reusable products, their interest in purchasing our proposed kit, and their preferred price range.</p>
+            <p class="small">Your participation is voluntary. All responses will be used solely for academic purposes. Please answer honestly. Thank you for your time and participation!</p>
+        </div>
+    </aside>
+
+    <main>
+        <div class="progress" id="progress">
+            <div class="bar"><i id="fill"></i></div>
+            <span id="count">0 of 5 answered</span>
+        </div>
+
+        <form id="survey" novalidate>
+            <fieldset data-name="q1">
+                <legend>1. How often do you purchase food or beverages that come in disposable packaging (e.g., plastic bottles, cups, or food containers)?</legend>
+                <div class="opts">
+                    <label class="opt"><input type="radio" name="q1" value="Every day"><span>Every day</span></label>
+                    <label class="opt"><input type="radio" name="q1" value="3-4 times a week"><span>3–4 times a week</span></label>
+                    <label class="opt"><input type="radio" name="q1" value="1-2 times a week"><span>1–2 times a week</span></label>
+                    <label class="opt"><input type="radio" name="q1" value="Rarely"><span>Rarely</span></label>
+                    <label class="opt"><input type="radio" name="q1" value="Never"><span>Never</span></label>
+                </div>
+            </fieldset>
+
+            <fieldset data-name="q2">
+                <legend>2. Which reusable items do you currently own and use when going to school?<span class="hint">Select all that apply.</span></legend>
+                <div class="opts cols2">
+                    <label class="opt check"><input type="checkbox" name="q2" value="Plastic tumbler"><span>Plastic tumbler</span></label>
+                    <label class="opt check"><input type="checkbox" name="q2" value="Steel tumbler"><span>Steel tumbler</span></label>
+                    <label class="opt check"><input type="checkbox" name="q2" value="Lunchbox"><span>Lunchbox</span></label>
+                    <label class="opt check"><input type="checkbox" name="q2" value="Steel spoon and fork"><span>Steel spoon and fork</span></label>
+                    <label class="opt check"><input type="checkbox" name="q2" value="Plastic/Wooden spoon and fork"><span>Plastic/Wooden spoon and fork</span></label>
+                    <label class="opt check"><input type="checkbox" name="q2" value="None of the above"><span>None of the above</span></label>
+                </div>
+            </fieldset>
+
+            <fieldset data-name="q3">
+                <legend>3. Would you be interested in purchasing a reusable kit containing a water tumbler, lunchbox, spoon and fork, and lunch bag?</legend>
+                <div class="opts row3">
+                    <label class="opt"><input type="radio" name="q3" value="Yes"><span>Yes</span></label>
+                    <label class="opt"><input type="radio" name="q3" value="No"><span>No</span></label>
+                    <label class="opt"><input type="radio" name="q3" value="Maybe"><span>Maybe</span></label>
+                </div>
+            </fieldset>
+
+            <fieldset data-name="buy">
+                <legend>4. Would you buy one ReConDuct kit at <span class="price">₱</span>?</legend>
+                <div class="opts">
+                    <label class="opt"><input type="radio" name="buy" value="Definitely"><span>Definitely</span></label>
+                    <label class="opt"><input type="radio" name="buy" value="Probably"><span>Probably</span></label>
+                    <label class="opt"><input type="radio" name="buy" value="Not sure"><span>Not sure</span></label>
+                    <label class="opt"><input type="radio" name="buy" value="Probably not"><span>Probably not</span></label>
+                    <label class="opt"><input type="radio" name="buy" value="No"><span>No</span></label>
+                </div>
+            </fieldset>
+
+            <fieldset data-name="qty">
+                <legend>5. At <span class="price">₱</span>, how many kits would you buy, including any for siblings, friends, or gifts?</legend>
+                <div class="opts row3">
+                    <label class="opt"><input type="radio" name="qty" value="0"><span>0</span></label>
+                    <label class="opt"><input type="radio" name="qty" value="1"><span>1</span></label>
+                    <label class="opt"><input type="radio" name="qty" value="2"><span>2</span></label>
+                    <label class="opt"><input type="radio" name="qty" value="3"><span>3</span></label>
+                    <label class="opt"><input type="radio" name="qty" value="4"><span>4</span></label>
+                    <label class="opt"><input type="radio" name="qty" value="5 or more"><span>5 or more</span></label>
+                </div>
+            </fieldset>
+
+            <button type="submit" id="send">Submit answers</button>
+            <p class="error" id="err" role="alert"></p>
+        </form>
+
+        <div id="thanks">
+            <h2>Thank you!</h2>
+            <p>Your answers were sent. You can close this page.</p>
+        </div>
+    </main>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4uA0_zQWULFECZoIXrrvuSA8ALDBk4Smvtm3u6YHXbYLC9aonLA9vHQXnK7zut2aNlg/exec";
+
+    const PRICES = [150, 175, 200, 225, 250, 300];
+
+    // Pick a price once per browser, so a reload doesn't re-roll it.
+    let price = null;
+    try { price = Number(localStorage.getItem("reconduct_price")); } catch (e) {}
+    if (!PRICES.includes(price)) {
+        price = PRICES[Math.floor(Math.random() * PRICES.length)];
+        try { localStorage.setItem("reconduct_price", String(price)); } catch (e) {}
+    }
+    document.querySelectorAll(".price").forEach(el => { el.textContent = "₱" + price; });
+
+    const form = document.getElementById("survey");
+    const err = document.getElementById("err");
+    const btn = document.getElementById("send");
+
+    function collect() {
+        const d = new FormData(form);
+        return { q1: d.get("q1"), q2: d.getAll("q2").join("; "), q3: d.get("q3"),
+                         buy: d.get("buy"), qty: d.get("qty") };
+    }
+
+    function updateProgress() {
+        const a = collect();
+        const done = Object.values(a).filter(Boolean).length;
+        document.getElementById("fill").style.width = (done / 5 * 100) + "%";
+        document.getElementById("count").textContent = done + " of 5 answered";
+    }
+
+    form.addEventListener("change", (ev) => {
+        // "None of the above" cancels the other items, and vice versa.
+        if (ev.target.name === "q2") {
+            const boxes = [...form.querySelectorAll('input[name="q2"]')];
+            const none = boxes.find(b => b.value === "None of the above");
+            if (ev.target === none && none.checked) boxes.forEach(b => { if (b !== none) b.checked = false; });
+            else if (ev.target !== none && ev.target.checked) none.checked = false;
+        }
+        ev.target.closest("fieldset").classList.remove("missing");
+        updateProgress();
+    });
+
+    form.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        err.textContent = "";
+        const answers = collect();
+
+        // All five questions are required.
+        const missing = Object.keys(answers).filter(k => !answers[k]);
+        document.querySelectorAll("fieldset").forEach(f => f.classList.remove("missing"));
+        if (missing.length) {
+            missing.forEach(k => document.querySelector('fieldset[data-name="' + k + '"]').classList.add("missing"));
+            document.querySelector('fieldset[data-name="' + missing[0] + '"]').scrollIntoView({ behavior: "smooth", block: "center" });
+            err.textContent = "Please answer every question.";
+            return;
+        }
+
+        if (SCRIPT_URL.startsWith("PASTE_")) {
+            err.textContent = "Setup needed: add your Apps Script URL in index.html.";
+            return;
+        }
+
+        btn.disabled = true; btn.textContent = "Sending…";
+        const body = new URLSearchParams({ price: String(price), ...answers });
+        try {
+            // no-cors: the response can't be read, but the row is still saved.
+            await fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", body });
+            form.style.display = "none";
+            document.getElementById("progress").style.display = "none";
+            document.getElementById("thanks").style.display = "block";
+            window.scrollTo(0, 0);
+        } catch (e) {
+            err.textContent = "Could not send. Check your connection and try again.";
+            btn.disabled = false; btn.textContent = "Submit answers";
+        }
+    });
+</script>
+</body>
+</html>
